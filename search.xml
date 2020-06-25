@@ -4,8 +4,11 @@
     <title>article title</title>
     <url>/2020/06/25/article-title/</url>
     <content><![CDATA[]]></content>
+      <categories>
+        <category>运维</category>
+      </categories>
       <tags>
-        <tag>test1</tag>
+        <tag>测试</tag>
       </tags>
   </entry>
   <entry>
