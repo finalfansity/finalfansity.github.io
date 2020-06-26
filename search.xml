@@ -23,6 +23,8 @@
     <title>mysql入门-01</title>
     <url>/2020/06/25/mysql%E5%85%A5%E9%97%A8-01/</url>
     <content><![CDATA[<h1 id="mysql入门"><a href="#mysql入门" class="headerlink" title="mysql入门"></a>mysql入门</h1><h2 id="客户端连接mysql"><a href="#客户端连接mysql" class="headerlink" title="客户端连接mysql"></a>客户端连接mysql</h2><p>​        默认情况下，mysql监听的端口为3306，因此需要指定3306；登陆还需要登陆mysql服务的账号和密码，初始情况下未创建任何其他非root账号，所以使用root账号进行登录，密码为指定的密码，若已经更改过密码，使用修改后的密码。</p>
+<a id="more"></a>
+
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 命令格式</span></span><br><span class="line">mysql -h localhost -P 3306 -u&lt;username&gt; -p&lt;password&gt;</span><br><span class="line"></span><br><span class="line">mysql --host=localhost --port=3306 --user=root --password=&lt;password&gt;</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 在使用过程中不要将密码直接在命令行输入,使用以下方式</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> mysql --host=localhost --port=3306 --user=root --password</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> Enter Password:</span></span><br></pre></td></tr></table></figure>
 
 <h2 id="数据库创建"><a href="#数据库创建" class="headerlink" title="数据库创建"></a>数据库创建</h2><p>​        在任何关系型数据库管理系统（RDBMS）的内部，数据都是以行来进行存储，每一行中也包含着许多列。表中容纳的列必须在表定义的时候进行定义，虽然可以随时修改表的定义，但是在进行表结构进行调整时，整个表都需要进行重新构建，在一定的情形下，表在进行修改时是不可用的（在操作大表时尤为要注意）。</p>
