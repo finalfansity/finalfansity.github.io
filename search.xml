@@ -372,17 +372,9 @@
       </tags>
   </entry>
   <entry>
-    <title>filebeat入门</title>
-    <url>/2020/06/28/filebeat%E5%85%A5%E9%97%A8/</url>
-    <content><![CDATA[<h1 id="filebeat入门"><a href="#filebeat入门" class="headerlink" title="filebeat入门"></a>filebeat入门</h1><img src="/.online//06/28/filebeat%E5%85%A5%E9%97%A8/1.jpg" class title="This">
-
+    <title>filebeat</title>
+    <url>/2020/06/28/filebeat/</url>
+    <content><![CDATA[<p><img src="https://gitblog.online/2020/06/28/filebeat/3379115bad3ac121f900a0d9abc08c6a.jpg" alt></p>
 ]]></content>
-      <categories>
-        <category>运维</category>
-      </categories>
-      <tags>
-        <tag>ELK</tag>
-        <tag>filebeat</tag>
-      </tags>
   </entry>
 </search>
