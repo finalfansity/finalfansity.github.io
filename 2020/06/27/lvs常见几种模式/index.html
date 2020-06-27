@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.gitblog.online","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="lvs常见几种模式一.基础介绍     LVS是Linux虚拟服务(Linux Virtual Server)的简称，是一个虚拟的服务器集群系统，是国内最早的一批自由软件项目，由章文嵩博士发起。现在LVS项目已经被Linux内核收录，成为Linux表针内核的一个重要组成部分。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lvs常见几种模式">
+<meta property="og:url" content="http://www.gitblog.online/2020/06/27/lvs%E5%B8%B8%E8%A7%81%E5%87%A0%E7%A7%8D%E6%A8%A1%E5%BC%8F/index.html">
+<meta property="og:site_name" content="运维点滴">
+<meta property="og:description" content="lvs常见几种模式一.基础介绍     LVS是Linux虚拟服务(Linux Virtual Server)的简称，是一个虚拟的服务器集群系统，是国内最早的一批自由软件项目，由章文嵩博士发起。现在LVS项目已经被Linux内核收录，成为Linux表针内核的一个重要组成部分。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s4.51cto.com/images/blog/201805/20/16f690048a3c88ddc2fd8c4c7d83fc78.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=">
+<meta property="og:image" content="https://s4.51cto.com/images/blog/201805/20/45a285f3cee6c0a763233a7365c80b28.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=">
+<meta property="og:image" content="https://s4.51cto.com/images/blog/201805/20/a10f448a030f5335c687736d0c3c53b3.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=">
+<meta property="og:image" content="https://s4.51cto.com/images/blog/201805/20/22712140097c2e0961b6261936c6a509.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=">
+<meta property="article:published_time" content="2020-06-27T15:00:43.000Z">
+<meta property="article:modified_time" content="2020-06-27T15:49:38.871Z">
+<meta property="article:author" content="zhu hui">
+<meta property="article:tag" content="负载均衡">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s4.51cto.com/images/blog/201805/20/16f690048a3c88ddc2fd8c4c7d83fc78.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=">
+
+<link rel="canonical" href="http://www.gitblog.online/2020/06/27/lvs%E5%B8%B8%E8%A7%81%E5%87%A0%E7%A7%8D%E6%A8%A1%E5%BC%8F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>lvs常见几种模式 | 运维点滴</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">运维点滴</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">日常工作学习的点点滴滴</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://www.gitblog.online/2020/06/27/lvs%E5%B8%B8%E8%A7%81%E5%87%A0%E7%A7%8D%E6%A8%A1%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/24290710?s=460&u=23bacf97f91c4c2b61df5dbdb59745bb5199ac9a&v=4">
+      <meta itemprop="name" content="zhu hui">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维点滴">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          lvs常见几种模式
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-27 23:00:43 / 修改时间：23:49:38" itemprop="dateCreated datePublished" datetime="2020-06-27T23:00:43+08:00">2020-06-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BF%90%E7%BB%B4/" itemprop="url" rel="index"><span itemprop="name">运维</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="lvs常见几种模式"><a href="#lvs常见几种模式" class="headerlink" title="lvs常见几种模式"></a>lvs常见几种模式</h1><h2 id="一-基础介绍"><a href="#一-基础介绍" class="headerlink" title="一.基础介绍"></a>一.基础介绍</h2><p>  </p>
+<p>  LVS是Linux虚拟服务(Linux Virtual Server)的简称，是一个虚拟的服务器集群系统，是国内最早的一批自由软件项目，由章文嵩博士发起。现在LVS项目已经被Linux内核收录，成为Linux表针内核的一个重要组成部分。<a id="more"></a></p>
+<p>  随着互联网大潮的不断发展，纵向拓展的高额成本和逐渐降低的性能提升不足以满足用户的正常访问，因此横向拓展便成为主要的发展方向。通过使用LVS提供的负载均衡技术和Linux操作系统进而实现一个高性能，高可用的服务器集群，它具有着良好的可靠性，可拓展性和可操作性，从而能够以较低廉的成本价格来提供更好的性能提升。</p>
+<p>  LVS项目自从1998年提出开始，随机不断的发展，现在已经成为了一个相当成熟的技术项目。可以利用LVS技术来实现高度的可伸缩性和高可用性的网络服务；有效的可管理性提供了便捷的异地管理主机；价格的有效性实现了整个系统的经济性和成本的可控性。</p>
+<p>  </p>
+<p>​      </p>
+<h2 id="二-LVS的结构"><a href="#二-LVS的结构" class="headerlink" title="二.LVS的结构"></a>二.LVS的结构</h2><p>  </p>
+<p>  LVS构建的集群系统大致可分为三个部分组成：前端的负载均衡层，中间的服务器集群层和最底层的共享数据层。负载调度器能够无缝隙的将网络请求调度到后端的真实提供服务的服务器上，从而使得服务器集群的结构是透明的，用户在访问整个集群的服务时就像是在访问一台高性能，高可用性的真实服务器一样。客户端的程序不会受到服务器集群的修改而受到影响，服务器集群的可伸缩性在于可以通过向集群中加入或者删除节点来实现，通过对应的节点故障检测和系统重置可以实现高度的可用性。</p>
+<p>​      </p>
+<p>  </p>
+<h3 id="LVS体系图例"><a href="#LVS体系图例" class="headerlink" title="LVS体系图例"></a>LVS体系图例</h3><p>​                <img src="https://s4.51cto.com/images/blog/201805/20/16f690048a3c88ddc2fd8c4c7d83fc78.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=" alt=""></p>
+<p>​                 </p>
+<p>​                  </p>
+<h3 id="LVS各层次的具体划分"><a href="#LVS各层次的具体划分" class="headerlink" title="LVS各层次的具体划分"></a>LVS各层次的具体划分</h3><p>  负载均衡层：</p>
+<p>    处于整个集群的最前端，由一台或者多台调度器构成，LVS模块部署在调度器上，调度器根据既定的算法来实现将网络请求调度到不同后端服务器，完成对应的功能。</p>
+<p>  </p>
+<p>  服务器集群层：</p>
+<p>    由一组实际运行着应用服务的服务器构成，后端服务器支持的服务包括，web服务，邮件服务，FTP服务，DNS服务等一个或者多个，每个服务器之间可以通过LAN或者更大范围的WAN相连，在实际的应用场景中，调取服务器也可以作为应用服务器提供服务。</p>
+<p>  </p>
+<p>  共享数据层：</p>
+<p>    向服务器集群中的所有real server提供共享存储空间和内容一致性的存储区域。一般是由磁盘阵列组成，提供数据的一致性。也可以由NFS提供。目前来说磁盘阵列更为适合，NFS受网络影响较大，不太稳定。</p>
+<p>​                </p>
+<p>注意：调度器在整个LVS体修中最为关键，是整个系统的核心部分。目前来说调度器系统仅仅支持Linux，内核2.6之后已经无需设置就原生支持LVS，但是reasl server的系统并不受限制，大多数常见的系统均可作为应用服务器提供服务。</p>
+<p>  </p>
+<p>  </p>
+<h2 id="三-负载均衡技术与LVS调度机制"><a href="#三-负载均衡技术与LVS调度机制" class="headerlink" title="三.负载均衡技术与LVS调度机制"></a>三.负载均衡技术与LVS调度机制</h2><p>  </p>
+<p>  当前负载均衡技术有很多实现方案，例如基于DNS域名依次轮流解析、基于客户端调度访问、基于应用层系统负载的调度，还有基于IP地址的调度等，相比较而言IP负载均衡技术更为成熟和效率。LVS的IP负载均衡技术是依赖于ipvs内核模块来实现的，ipvs是LVS集群系统的核心软件，它的主要作用是：安装在调度器上，同时在调度器上虚拟出一个IP地址（这个地址可以正常访问互联网），用户必须通过这个虚拟的IP地址访问集群服务。这个虚拟IP一般称为LVS的VIP。访问的请求首先经过VIP到达负载调度器，然后由负载调度器从Real Server列表中根据不同的调度算法计算选取一个服务节点响应用户的请求。</p>
+<p>  </p>
+<h4 id="常用的调度机制"><a href="#常用的调度机制" class="headerlink" title="常用的调度机制"></a>常用的调度机制</h4><p>  </p>
+<p>  VS/NAT机制（Virtual Server via Network Address Translation）</p>
+<p>  通过网络地址转换技术。当用户的请求报文发送到调度器时，调度器重写请求报文的目标地址为调度器通过算法得出的后端real server的IP地址，同时请求报文的目标端口号也会被重写为后端服务器提供服务的端口号，之后将重新构建的报文分派给后端的真实服务器；真实服务器的在返回数据报文给用户时，响应报文在通过调度器时，调度器会再次将报文的源地址和源端口重写为虚拟IP地址和端口，再返回给客户，完成整个负载调度过程。</p>
+<p><img src="https://s4.51cto.com/images/blog/201805/20/45a285f3cee6c0a763233a7365c80b28.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=" alt=""></p>
+<p>​        多目标的DNAT(iptables)；它通过修改请求报文的目标IP地址(同时可能会修改目标端口)至挑选出某RS的RIP地址实现转发；</p>
+<p>  </p>
+<p>注意：</p>
+<p>    (1) RS应该和DIP应该使用私网地址，且RS的网关要指向DIP；</p>
+<p>    (2) 请求和响应报文都要经由director转发；极高负载的场景中，director可能会成为系统瓶颈；</p>
+<p>    (3) 支持端口映射；</p>
+<p>    (4) RS可以使用任意操作系统；</p>
+<p>    (5) RS的RIP和Director的DIP必须在同一IP网络；</p>
+<p>  </p>
+<p>  VS/TUN机制（Virtual Server via IP Tunneling）</p>
+<p>  采用NAT技术时，由于请求和响应报文都必须经过调度器地址重写，当客户请求越来越多时，调度器的处理能力将成为瓶颈。采用IP隧道技术实现LVS，它的调度方法与NAT方式一样，但是TUN的报文转发方式不同，TUN方式中，调度器使用IP隧道技术将用户的请求转发到某个real server上，这个real server可以直接通过网络响应用户的请求，不必经过调度器再次调度，因此调度器和real server的地域限制不再存在，可以与调度器在同一网段，也可以在不同的网络中。因此，在TUN中调度器仅仅负责处理用户的报文请求，而不必处理响应报文，采用 VS/TUN技术后，集群系统的最大吞吐量可以提高10倍。</p>
+<p><img src="https://s4.51cto.com/images/blog/201805/20/a10f448a030f5335c687736d0c3c53b3.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=" alt=""></p>
+<p>注意：</p>
+<p>  TUN不修改请求报文的ip首部，而是通过在原有的ip首部（cip&lt;–&gt;vip）之外，再封装一个ip首部&amp;(dip&lt;–&gt;rip)；</p>
+<p>    (1) RIP, DIP, VIP全得是公网地址；</p>
+<p>    (2) RS的网关的不能指向DIP；</p>
+<p>    (3) 请求报文必须经由director调度，但响应报文必须不能经由director；</p>
+<p>    (4) 不支持端口映射；</p>
+<p>    (5) RS的OS必须支持隧道功能；</p>
+<p>  </p>
+<p>  </p>
+<p>  VS/DR(Virtual Server via Direct Routing)</p>
+<p>  通过直接路由技术构建，调度和管理与之前两个相同，但是报文的转发方式不同，DR模型通过修改请求报文的MAC地址，将请求发送到real server上，real server在完成请求后直接将响应回应给用户，减少了IP隧道的成本，也不必要求必须支持隧道协议；但是要求调度器和real server都有一块网卡在同一物理网络中。同样DR模型也可以极大地 提高集群系统的伸缩性。</p>
+<p><img src="https://s4.51cto.com/images/blog/201805/20/22712140097c2e0961b6261936c6a509.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_100,g_se,x_10,y_10,shadow_90,type_ZmFuZ3poZW5naGVpdGk=" alt=""></p>
+<p>  </p>
+<p>注意：</p>
+<p>  (1) 保证前端路由器将目标IP为VIP的请求报文发送给director; </p>
+<p>    解决方案：</p>
+<p>    静态绑定 </p>
+<p>    arptables</p>
+<p>    修改RS主机内核的参数</p>
+<p>  (2) RS的RIP可以使用私有地址；但也可以使用公网地址；</p>
+<p>  (3) RS跟Director必须在同一物理网络中 ；</p>
+<p>  (4) 请求报文经由Director调度，但响应报文一定不能经由Director；</p>
+<p>  (5) 不支持端口映射；</p>
+<p>  (6) RS可以大多数OS；</p>
+<p>  (7) RS的网关不能指向DIP；</p>
+<p>  </p>
+<h2 id="四-调度算法"><a href="#四-调度算法" class="headerlink" title="四.调度算法"></a>四.调度算法</h2><p><strong>静态方法</strong>：仅根据算法本身进行调度； </p>
+<p>  RR：round robin，轮叫</p>
+<p>  “轮叫”调度也叫作“1:1”调度，调度器通过“轮叫”调度算法将外部用户请求顺序按照顺序1:1的分配到集群中的每个real server上，这种算法平等的对待每一台real server，不考虑不同机器的性能差异与系统当前的负载情况。</p>
+<p>  WRR：weighted rr, 加权轮叫</p>
+<p>  加权轮叫算法是根据real server的不同的处理性能来调度访问请求，可以对每台real server设置不同的权重值，对于性能好的机器可以设置较高的去权重值，而对于性能较弱的机器，设置较低的权重值，这样可以保证性能强的机器能够分配到较多的用户请求，性能较差的机器分配较少的用户请求，合理的利用现有的资源，同时，调度器还可以自动查询real server的负载情况，动态的进行权重来进行合理的分配资源。</p>
+<p>  SH: source hash, 实现session保持的机制；将来自于同一个IP的请求始终调度至同一RS；</p>
+<p>  “源地址散列“调度算法根据用户请求的来源地址，作为散列键（Hash key）从静态分配的散列表内找出相对应的服务器，若被找出的服务器是可用且未超载，则调度器将请求发送到这台服务器否则返回空。</p>
+<p>  DH：destination hash, 将对同一个目标的请求始终发往同一个RS；</p>
+<p>  “目标地址散列”调度算法，调度器根据请求的目标IP地址，作为散列键从静态分配的散列表中找出对应的服务器，若被找出的服务器是可用且未超载，则将请求发送到这台服务器。</p>
+<p>  </p>
+<p><strong>动态方法</strong>：根据算法及各RS的当前负载状态进行调度；</p>
+<p>    Overhead=当前负载状态</p>
+<p>  LC：Least Connection   最少连接数</p>
+<p>    Overhead=Active*256+Inactive</p>
+<p>  “最少连接数”调度算法动态的将网络请求调度到已经建立的连接数最少服务器上，假设集群中的服务器都具有相近的运算性能，那么使用“最小连接数”调度算法可以很好的去均衡集群的负载。</p>
+<p>  WLC: Weighted LC  加权最少连接</p>
+<p>    Overhead=(Active*256+Inactive)/weight</p>
+<p>  “加权最少连接”调度算法是“最少连接”算法的进一步优化，每个处理节点可以设置不同的权重值来表示其不同的处理性能，网络管理人员可以动态调整这些权值。默认值是1.加权最小连接调度算法在调度时候尽可能的去调度服务节点与权重值成正向比例。</p>
+<p>  SED: Shortest Expection Delay   最短期望延迟</p>
+<p>    Overhead=(Active+1)*256/weight</p>
+<p>  NQ：Never Queue  永不排队</p>
+<p>  “永不排队”调度算法在负载较低时，会将请求直接分配到空闲的服务器之上，不会进行额外的算法调度，当整个集群负载较高时，则会进行轮叫。</p>
+<p>    SED算法的改进；</p>
+<p>  LBLC：Locality-Based LC，即为动态的DH算法；</p>
+<p>    正向代理情形下的cache server调度；</p>
+<p>  “基于局部的最少连接”调度算法，本质上是为了实现基于目标IP地址的负载均衡。这个算法根据请求的目标IP地址找出该目标IP地址最近使用的服务器，若该服务器可用且未超载，那么进行调度；假如服务器不存在，或者该服务器超载且有服务器处于一半的工作负载，则用”最少链接”的原则选出一个可用的服务 器，将请求发送到该服务器。</p>
+<p>  LBLCR：Locality-Based Least-Connection with Replication，带复制功能的LBLC算法；</p>
+<p>  “带复制的基于局部性最少链接”调度算法也是针对目标IP地址的负载均衡，应用与LBLC相同，不同之处是它要维护从一个 目标IP地址到一组服务器的映射，而LBLC算法维护从一个目标IP地址到一台服务器的映射。该算法根据请求的目标IP地址找出该目标IP地址对应的服务 器组，按”最小连接”原则从服务器组中选出一台服务器，若服务器没有超载，将请求发送到该服务器，若服务器超载；则按”最小连接”原则从这个集群中选出一 台服务器，将该服务器加入到服务器组中，将请求发送到该服务器。同时，当该服务器组有一段时间没有被修改，将最忙的服务器从服务器组中删除，以降低复制的程度。</p>
+<h2 id="五-LVS适用环境与安装使用"><a href="#五-LVS适用环境与安装使用" class="headerlink" title="五.LVS适用环境与安装使用"></a>五.LVS适用环境与安装使用</h2><p>  </p>
+<p><strong>适用环境</strong></p>
+<p>  调度器目前支持Linuxhe FreeBSD</p>
+<p>  支持的TCP：HTTP,HTTPS,FTP,SMTP,POP3,IMAP4,PROXY,LDAP,SSMTP</p>
+<p>  支持的UDP：DNS,NTP,ICP,视频和音频流播放协议。</p>
+<p>  </p>
+<p>  LVS对应real server没有限制，real server可以运行在所有的支持TCP/IP的操作系统之上。</p>
+<p>  </p>
+<p><strong>管理软件ipvsadm与常见配置选项</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line">yum install ipvsadm -y</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">管理集群服务</span><br><span class="line"></span><br><span class="line">  ipvsadm -A|E -t|u|f service-address [-s scheduler]</span><br><span class="line"></span><br><span class="line">  ipvsadm -D -t|u|f service-address</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  service-address:</span><br><span class="line"></span><br><span class="line">    tcp: -t ip:port</span><br><span class="line"></span><br><span class="line">    udp: -u ip:port</span><br><span class="line"></span><br><span class="line">    fwm: -f mark</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  -s scheculer:</span><br><span class="line"></span><br><span class="line">    默认为wlc</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  管理集群服务中的RS</span><br><span class="line"></span><br><span class="line">  ipvsadm -a|e -t|u|f service-address -r server-address [-g|i|m] [-w weight]</span><br><span class="line"></span><br><span class="line">  ipvsadm -d -t|u|f service-address -r server-address</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  server-address: </span><br><span class="line"></span><br><span class="line">  ip[:port]</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  lvs-type:</span><br><span class="line"></span><br><span class="line">  -g: gateway, dr</span><br><span class="line"></span><br><span class="line">  -i: ipip, tun</span><br><span class="line"></span><br><span class="line">  -m: masquerade, nat</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  清空和查看：</span><br><span class="line"></span><br><span class="line">  ipvsadm -C</span><br><span class="line"></span><br><span class="line">  ipvsadm -L|l [options]    </span><br><span class="line"></span><br><span class="line">    -n: numeric，基于数字格式显示地址和端口；</span><br><span class="line"></span><br><span class="line">    -c: connection，显示ipvs连接；</span><br><span class="line"></span><br><span class="line">    --stats：统计数据</span><br><span class="line"></span><br><span class="line">    --rate: 速率</span><br><span class="line"></span><br><span class="line">    --exact: 精确值        </span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  保存和重载：</span><br><span class="line"></span><br><span class="line">  ipvsadm -R</span><br><span class="line"></span><br><span class="line">  ipvsadm -S [-n]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  置零计数器：</span><br><span class="line"></span><br><span class="line">  ipvsadm -Z [-t|u|f service-address]</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">  注释：</span><br><span class="line"></span><br><span class="line">​        -A    添加一个新的集群服务；</span><br><span class="line"></span><br><span class="line">​        -E    修改一个己有的集群服务；</span><br><span class="line"></span><br><span class="line">​        -D    删除指定的集群服务；</span><br><span class="line"></span><br><span class="line">​        -a    向指定的集群服务中添加RS及属性；</span><br><span class="line"></span><br><span class="line">​        -e    修改RS属性；</span><br><span class="line"></span><br><span class="line">​        -t    指定为tcp协议；</span><br><span class="line"></span><br><span class="line">​        -u    指定为udp协议；</span><br><span class="line"></span><br><span class="line">​        -f    指定防火墙标记码，通常用于将两个或以上的服务绑定为一个服务进行处理时使用；</span><br><span class="line"></span><br><span class="line">​        -s    调度方法，默认为wlc；</span><br><span class="line"></span><br><span class="line">​        -w    指定权重，默认为1；</span><br><span class="line"></span><br><span class="line">​        -p timeout   persistent connection, 持久连接超时时长；</span><br><span class="line"></span><br><span class="line">​        -g    Gateway, DR模型；</span><br><span class="line"></span><br><span class="line">​        -i    ipip, TUN模型；</span><br><span class="line"></span><br><span class="line">​        -m    masquerade, NAT模型；</span><br><span class="line"></span><br><span class="line">​        -S    保存ipvsadm设定的规则策略，默认保存在/etc/sysconfig/ipvsadm中；</span><br><span class="line"></span><br><span class="line">​        -R    载入己保存的规则策略，默认加载/etc/sysconfig/ipvsadm；</span><br><span class="line"></span><br><span class="line">​        -C    清除所有集群服务；</span><br><span class="line"></span><br><span class="line">​        -Z    清除所有记数器；</span><br><span class="line"></span><br><span class="line">​        -L    显示当前己有集群服务，能通过相应的options查看不同状态信息；</span><br></pre></td></tr></table></figure>
+
+<p>  </p>
+<p>​    </p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/" rel="tag"># 负载均衡</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/27/shell%E8%84%9A%E6%9C%AC%E7%BB%83%E4%B9%A0/" rel="prev" title="shell脚本练习">
+      <i class="fa fa-chevron-left"></i> shell脚本练习
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#lvs常见几种模式"><span class="nav-number">1.</span> <span class="nav-text">lvs常见几种模式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#一-基础介绍"><span class="nav-number">1.1.</span> <span class="nav-text">一.基础介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二-LVS的结构"><span class="nav-number">1.2.</span> <span class="nav-text">二.LVS的结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#LVS体系图例"><span class="nav-number">1.2.1.</span> <span class="nav-text">LVS体系图例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LVS各层次的具体划分"><span class="nav-number">1.2.2.</span> <span class="nav-text">LVS各层次的具体划分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#三-负载均衡技术与LVS调度机制"><span class="nav-number">1.3.</span> <span class="nav-text">三.负载均衡技术与LVS调度机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#常用的调度机制"><span class="nav-number">1.3.0.1.</span> <span class="nav-text">常用的调度机制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#四-调度算法"><span class="nav-number">1.4.</span> <span class="nav-text">四.调度算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#五-LVS适用环境与安装使用"><span class="nav-number">1.5.</span> <span class="nav-text">五.LVS适用环境与安装使用</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="zhu hui"
+      src="https://avatars3.githubusercontent.com/u/24290710?s=460&u=23bacf97f91c4c2b61df5dbdb59745bb5199ac9a&v=4">
+  <p class="site-author-name" itemprop="name">zhu hui</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zhu hui</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="//cdn.jsdelivr.net/gh/theme-next/theme-next-three@1/three.min.js"></script>
+    <script defer src="//cdn.jsdelivr.net/gh/theme-next/theme-next-three@1/three-waves.min.js"></script>
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/clicklove.js"></script>
+
